@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Who Owes Me">
+<title>Who Owes Me</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --accent: #7c6af7;
+    --accent-soft: rgba(124,106,247,0.15);
+    --accent-glow: rgba(124,106,247,0.35);
+    --green: #4ade80;
+    --red: #f87171;
+    --text: #f0eeff;
+    --muted: #7a7a9a;
+    --border: rgba(255,255,255,0.07);
+    --radius: 16px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+  }
+
+  .app {
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 0 20px 100px;
+  }
+
+  /* Header */
+  .header {
+    padding: 56px 0 24px;
+  }
+  .header-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  /* Total card */
+  .total-card {
+    background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 20px 0 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .total-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .total-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 8px;
+  }
+  .total-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+  }
+  .total-sub {
+    margin-top: 10px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* Add friend section */
+  .add-friend-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 28px;
+  }
+  .add-friend-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .add-friend-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 16px;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    min-width: 0;
+  }
+  .add-friend-row input:focus { border-color: var(--accent); }
+  .add-friend-row input::placeholder { color: var(--muted); }
+
+  .add-friend-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: opacity 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .add-friend-btn:active { opacity: 0.85; transform: scale(0.97); }
+
+  .section-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--green);
+    color: #000;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 20px;
+    border-radius: 100px;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Friends list header */
+  .friends-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .friends-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .friends-count {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface);
+    padding: 3px 10px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+  }
+
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 14px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px dashed var(--border);
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 10px; }
+
+  /* Friend card */
+  .friend-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+  }
+  .friend-card.expanded { border-color: rgba(124,106,247,0.3); }
+
+  .friend-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .friend-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    border: 1.5px solid var(--accent-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .friend-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .friend-entries {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .friend-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .friend-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--green);
+  }
+  .chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  .friend-card.expanded .chevron { transform: rotate(180deg); }
+
+  /* Expanded panel */
+  .entries-panel {
+    display: none;
+    margin-top: 16px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .friend-card.expanded .entries-panel { display: block; }
+
+  /* Inline add-due form */
+  .add-due-form {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .add-due-form .due-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .add-due-form input {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    width: 100%;
+  }
+  .add-due-form input:focus { border-color: var(--accent); }
+  .add-due-form input::placeholder { color: var(--muted); }
+  .add-due-form input[type="number"] { width: 130px; flex-shrink: 0; }
+
+  .due-submit-row {
+    display: flex;
+    gap: 8px;
+  }
+  .due-add-btn {
+    flex: 1;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
+  }
+  .due-add-btn:active { opacity: 0.8; }
+
+  /* Entries log */
+  .entries-log { margin-bottom: 12px; }
+
+  .entry-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .entry-row:last-child { border-bottom: none; }
+
+  .entry-note { font-size: 13px; color: var(--text); }
+  .entry-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .entry-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .entry-amount { font-size: 14px; font-weight: 600; color: var(--green); }
+  .del-entry {
+    background: none;
+    border: none;
+    color: var(--red);
+    font-size: 15px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    opacity: 0.55;
+    transition: opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .del-entry:active { opacity: 1; }
+
+  /* Card action buttons */
+  .friend-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .settle-btn {
+    flex: 1;
+    background: rgba(74,222,128,0.12);
+    color: var(--green);
+    border: 1.5px solid rgba(74,222,128,0.3);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .settle-btn:active { background: rgba(74,222,128,0.25); }
+
+  .delete-friend-btn {
+    background: rgba(248,113,113,0.1);
+    color: var(--red);
+    border: 1.5px solid rgba(248,113,113,0.25);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .delete-friend-btn:active { background: rgba(248,113,113,0.22); }
+
+  /* Install banner */
+  .install-banner {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    left: 20px; right: 20px;
+    max-width: 390px;
+    margin: 0 auto;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 100;
+    animation: slideUp 0.4s 1.5s both;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .install-banner .icon { font-size: 20px; flex-shrink: 0; }
+  .install-banner strong { color: var(--text); display: block; margin-bottom: 2px; }
+  .install-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)}
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <div class="header">
+    <div class="header-label">Expense Tracker</div>
+    <h1>Who Owes Me 💸</h1>
+  </div>
+
+  <!-- Total -->
+  <div class="total-card">
+    <div class="total-label">Total Owed to You</div>
+    <div class="total-amount" id="totalAmount">₹0</div>
+    <div class="total-sub" id="totalSub">No pending dues</div>
+  </div>
+
+  <!-- Add Friend -->
+  <div class="add-friend-section">
+    <div class="section-eyebrow">Add a new friend</div>
+    <div class="add-friend-row">
+      <input type="text" id="newFriendName" placeholder="Enter friend's name" autocomplete="off" autocorrect="off">
+      <button class="add-friend-btn" onclick="addFriend()">+ Add</button>
+    </div>
+  </div>
+
+  <!-- Friends List -->
+  <div class="friends-header">
+    <h2>Pending Dues</h2>
+    <span class="friends-count" id="friendsCount">0 friends</span>
+  </div>
+
+  <div id="friendsList"></div>
+</div>
+
+<!-- Install banner -->
+<div class="install-banner" id="installBanner" style="display:none">
+  <span class="icon">📲</span>
+  <div>
+    <strong>Add to Home Screen</strong>
+    Tap Share → "Add to Home Screen" to use like an app
+  </div>
+  <button class="install-close" onclick="closeBanner()">✕</button>
+</div>
+
+<script>
+  const STORAGE_KEY = 'whoowesme_v2';
+  let data = {}; // { name: [{amount, note, date}] }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) data = JSON.parse(raw);
+    } catch(e) { data = {}; }
+    render();
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  // Add a new friend (no amount yet)
+  function addFriend() {
+    const name = document.getElementById('newFriendName').value.trim();
+    if (!name) { shakeEl(document.getElementById('newFriendName')); return; }
+    if (data[name] !== undefined) {
+      showToast(`${name} already exists!`);
+      // expand their card instead
+      expandCard(name);
+      document.getElementById('newFriendName').value = '';
+      return;
+    }
+    data[name] = [];
+    save();
+    render();
+    document.getElementById('newFriendName').value = '';
+    showToast(`${name} added! Now add a due below.`);
+    // auto-expand the new card
+    setTimeout(() => expandCard(name), 80);
+  }
+
+  // Add a due to an existing friend (called from inline form inside card)
+  function addDue(name) {
+    const amtEl = document.getElementById('amt-' + escapeId(name));
+    const noteEl = document.getElementById('note-' + escapeId(name));
+    const amount = parseFloat(amtEl.value);
+    const note = noteEl.value.trim();
+
+    if (!amount || amount <= 0) { shakeEl(amtEl); return; }
+
+    data[name].push({
+      amount,
+      note: note || 'No note',
+      date: new Date().toLocaleDateString('en-IN', { day:'numeric', month:'short' })
+    });
+
+    save();
+    renderCard(name);
+    updateTotals();
+    showToast(`₹${amount} added for ${name}`);
+    amtEl.value = '';
+    noteEl.value = '';
+    amtEl.focus();
+  }
+
+  function deleteEntry(name, index) {
+    data[name].splice(index, 1);
+    save();
+    renderCard(name);
+    updateTotals();
+  }
+
+  function settleFriend(name) {
+    if (!confirm(`Mark ${name} as fully settled? This clears all their dues.`)) return;
+    data[name] = [];
+    save();
+    renderCard(name);
+    updateTotals();
+    showToast(`${name} settled! 🎉`);
+  }
+
+  function deleteFriend(name) {
+    if (!confirm(`Remove ${name} from the list?`)) return;
+    delete data[name];
+    save();
+    render();
+  }
+
+  function expandCard(name) {
+    const card = document.getElementById('card-' + escapeId(name));
+    if (card) card.classList.add('expanded');
+  }
+
+  function toggleExpand(name) {
+    const card = document.getElementById('card-' + escapeId(name));
+    if (card) card.classList.toggle('expanded');
+  }
+
+  function updateTotals() {
+    const friends = Object.keys(data);
+    const total = friends.reduce((sum, n) => sum + data[n].reduce((s, e) => s + e.amount, 0), 0);
+    const nonEmpty = friends.filter(n => data[n].length > 0);
+    document.getElementById('totalAmount').textContent = '₹' + total.toLocaleString('en-IN');
+    document.getElementById('totalSub').textContent =
+      nonEmpty.length === 0 ? 'No pending dues' :
+      `${nonEmpty.length} friend${nonEmpty.length > 1 ? 's' : ''} owe${nonEmpty.length === 1 ? 's' : ''} you`;
+    document.getElementById('friendsCount').textContent =
+      `${friends.length} friend${friends.length !== 1 ? 's' : ''}`;
+  }
+
+  function renderCard(name) {
+    const card = document.getElementById('card-' + escapeId(name));
+    if (!card) return;
+    const wasExpanded = card.classList.contains('expanded');
+    card.outerHTML = buildCardHTML(name);
+    if (wasExpanded) expandCard(name);
+  }
+
+  function render() {
+    updateTotals();
+    const friends = Object.keys(data);
+    const list = document.getElementById('friendsList');
+
+    if (friends.length === 0) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">🤝</div>Add a friend above to get started.</div>`;
+      return;
+    }
+
+    list.innerHTML = friends.map(name => buildCardHTML(name)).join('');
+  }
+
+  function buildCardHTML(name) {
+    const entries = data[name] || [];
+    const friendTotal = entries.reduce((s, e) => s + e.amount, 0);
+    const initial = name[0].toUpperCase();
+    const id = escapeId(name);
+    const js = escapeJs(name);
+
+    return `
+      <div class="friend-card" id="card-${id}">
+        <div class="friend-card-header" onclick="toggleExpand('${js}')">
+          <div class="friend-left">
+            <div class="avatar">${initial}</div>
+            <div>
+              <div class="friend-name">${escapeHtml(name)}</div>
+              <div class="friend-entries">${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} · tap to ${entries.length === 0 ? 'add' : 'view'}</div>
+            </div>
+          </div>
+          <div class="friend-right">
+            <div class="friend-amount">₹${friendTotal.toLocaleString('en-IN')}</div>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+
+        <div class="entries-panel">
+          <!-- Inline add due form -->
+          <div class="add-due-form">
+            <div class="due-row">
+              <input type="number" id="amt-${id}" placeholder="Amount (₹)" inputmode="decimal" style="width:130px;flex-shrink:0">
+              <input type="text" id="note-${id}" placeholder="Note (optional)">
+            </div>
+            <div class="due-submit-row">
+              <button class="due-add-btn" onclick="addDue('${js}')">+ Add Due</button>
+            </div>
+          </div>
+
+          <!-- Entries list -->
+          ${entries.length > 0 ? `
+            <div class="entries-log">
+              ${entries.map((e, i) => `
+                <div class="entry-row">
+                  <div>
+                    <div class="entry-note">${escapeHtml(e.note)}</div>
+                    <div class="entry-date">${e.date}</div>
+                  </div>
+                  <div class="entry-right">
+                    <div class="entry-amount">₹${e.amount.toLocaleString('en-IN')}</div>
+                    <button class="del-entry" onclick="deleteEntry('${js}', ${i})">✕</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <div class="friend-actions">
+            ${entries.length > 0 ? `<button class="settle-btn" onclick="settleFriend('${js}')">✓ Mark Settled</button>` : ''}
+            <button class="delete-friend-btn" onclick="deleteFriend('${js}')">Remove</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function shakeEl(el) {
+    el.style.animation = 'none';
+    el.getBoundingClientRect();
+    el.style.animation = 'shake 0.3s ease';
+    el.style.borderColor = 'var(--red)';
+    setTimeout(() => { el.style.borderColor = ''; el.style.animation = ''; }, 600);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escapeJs(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+  function escapeId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+  function closeBanner() {
+    document.getElementById('installBanner').style.display = 'none';
+    localStorage.setItem('banner_dismissed', '1');
+  }
+
+  // Enter in friend name field
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('newFriendName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addFriend();
+    });
+  });
+
+  // Install banner
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const inStandalone = window.navigator.standalone;
+  const dismissed = localStorage.getItem('banner_dismissed');
+  if (isIOS && !inStandalone && !dismissed) {
+    document.getElementById('installBanner').style.display = 'flex';
+  }
+
+  load();
+</script>
+</body>
+</html>
